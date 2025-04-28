@@ -70,17 +70,17 @@ def preprocess_text(text):
     # Convert to lowercase
     text = text.lower()
     # Remove stop words (without using nltk to avoid import issues)
-    stop_words = {"i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", 
-                 "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", 
-                 "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", 
-                 "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are", 
-                 "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", 
-                 "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until", 
-                 "while", "of", "at", "by", "for", "with", "about", "against", "between", "into", 
-                 "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", 
-                 "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", 
-                 "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", 
-                 "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", 
+    stop_words = {"i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours",
+                 "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers",
+                 "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves",
+                 "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are",
+                 "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does",
+                 "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until",
+                 "while", "of", "at", "by", "for", "with", "about", "against", "between", "into",
+                 "through", "during", "before", "after", "above", "below", "to", "from", "up", "down",
+                 "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here",
+                 "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more",
+                 "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so",
                  "than", "too", "very", "s", "t", "can", "will", "just", "don", "should", "now"}
     text = " ".join(word for word in text.split() if word not in stop_words)
     return text
@@ -118,7 +118,7 @@ def load_dataset():
             data["source_text"].append(f"Original text example {i+1} that is completely unique.")
             data["plagiarized_text"].append(f"Another unique text sample {i+1} with different content.")
             data["label"].append(0)
-        
+
         return pd.DataFrame(data)
 
 # Train model
@@ -127,35 +127,35 @@ def train_model(data):
     # Preprocess the data
     data["source_text"] = data["source_text"].apply(preprocess_text)
     data["plagiarized_text"] = data["plagiarized_text"].apply(preprocess_text)
-    
+
     # Create features
     tfidf_vectorizer = TfidfVectorizer()
     combined_texts = data["source_text"] + " " + data["plagiarized_text"]
     X = tfidf_vectorizer.fit_transform(combined_texts)
     y = data["label"]
-    
+
     # Train model
     model = SVC(kernel='linear', probability=True)
     model.fit(X, y)
-    
+
     return model, tfidf_vectorizer
 
 # Function to detect plagiarism
 def detect_plagiarism(input_text, model, vectorizer):
     # Preprocess the input text
     processed_text = preprocess_text(input_text)
-    
+
     # Vectorize the input text
     vectorized_text = vectorizer.transform([processed_text])
-    
+
     # Get prediction and probability
     prediction = model.predict(vectorized_text)[0]
     probabilities = model.predict_proba(vectorized_text)[0]
-    
+
     # Calculate confidence percentage
     confidence = probabilities[1] if prediction == 1 else probabilities[0]
     confidence_pct = round(confidence * 100, 2)
-    
+
     return prediction, confidence_pct
 
 # Main app functionality
@@ -164,10 +164,10 @@ def main():
     with st.spinner("Loading model..."):
         data = load_dataset()
         model, vectorizer = train_model(data)
-    
+
     # Create layout
     col1, col2 = st.columns([2, 1])
-    
+
     with col1:
         # Text input
         user_text = st.text_area(
@@ -175,7 +175,7 @@ def main():
             height=300,
             placeholder="Paste your text here..."
         )
-        
+
         # Check button
         if st.button("Check for Plagiarism", type="primary"):
             if not user_text:
@@ -183,7 +183,7 @@ def main():
             else:
                 with st.spinner('Analyzing text...'):
                     prediction, confidence = detect_plagiarism(user_text, model, vectorizer)
-                
+
                 # Display result
                 if prediction == 1:
                     st.markdown(
@@ -195,19 +195,19 @@ def main():
                         f'<div class="result-box not-plagiarized">✅ No Plagiarism Detected (Confidence: {confidence}%)</div>',
                         unsafe_allow_html=True
                     )
-    
+
     with col2:
         st.markdown("### How it works")
         st.markdown("""
         This plagiarism checker uses machine learning to detect similarities between texts:
-        
+
         1. **Text Preprocessing**: Removes punctuation, converts to lowercase, and removes stop words
         2. **Vectorization**: Converts text to numerical vectors using TF-IDF
         3. **Classification**: Uses a Support Vector Machine (SVM) model to classify text as plagiarized or original
-        
+
         The model was trained on a dataset of paired texts (original and plagiarized versions).
         """)
-        
+
         st.markdown("### Examples to try")
         st.info("**May detect as plagiarized**:\nResearchers have discovered a new species of butterfly in the Amazon rainforest.")
         st.success("**Should detect as original**:\nPracticing yoga regularly can significantly improve flexibility and reduce stress levels.")
